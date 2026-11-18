@@ -33,7 +33,11 @@
 
 #include "palAssert.h"
 
+#if defined(_WIN32)
+#include "palWin.h"
+#else
 #include <pthread.h>
+#endif
 #include <string.h>
 
 namespace Util
@@ -48,9 +52,15 @@ class Mutex
 {
 public:
     /// Defines MutexData as a unix pthread_mutex_t
+#if defined(_WIN32)
+    typedef CRITICAL_SECTION MutexData;
+    Mutex() noexcept { InitializeCriticalSection(&m_osMutex); }
+    ~Mutex() { DeleteCriticalSection(&m_osMutex); }
+#else
     typedef pthread_mutex_t MutexData;
     Mutex() noexcept : m_osMutex {} { pthread_mutex_init(&m_osMutex, nullptr); }
     ~Mutex() { pthread_mutex_destroy(&m_osMutex); };
+#endif
 
     /// Enters the critical section if it is not contended.  If it is contended, wait for the critical section to become
     /// available, then enter it.
@@ -126,10 +136,16 @@ class RWLock
 {
 public:
     /// Defines RWLockData as a unix pthread_rwlock_t
+#if defined(_WIN32)
+    typedef SRWLOCK RWLockData;
+    RWLock() noexcept : m_osRWLock(SRWLOCK_INIT) {}
+    ~RWLock() noexcept = default;
+#else
     typedef pthread_rwlock_t  RWLockData;
     /// @note pthread_rwlock_init will not fail as called
     RWLock() noexcept : m_osRWLock {} { pthread_rwlock_init(&m_osRWLock, nullptr); }
     ~RWLock() noexcept { pthread_rwlock_destroy(&m_osRWLock); };
+#endif
 
     /// Enumerates the lock type of RWLockAuto
     enum LockType

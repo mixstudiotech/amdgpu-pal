@@ -588,7 +588,7 @@ typedef enum _AddrSurfaceSwap {
 //
 //  64-bit integer types depend on the compiler
 //
-#if defined( __GNUC__ ) || defined( __WATCOMC__ )
+#if defined( __GNUC__ ) || defined( __WATCOMC__ ) || defined(_MSC_VER)
 #define INT_64   long long
 #define UINT_64  unsigned long long
 
@@ -615,7 +615,7 @@ typedef enum _AddrSurfaceSwap {
 
 //  ADDR64X is used to print addresses in hex form on both Windows and Linux
 //
-#if defined( __GNUC__ ) || defined( __WATCOMC__ )
+#if defined( __GNUC__ ) || defined( __WATCOMC__ ) || defined(_MSC_VER)
 #define ADDR64X "llx"
 #define ADDR64D "lld"
 

@@ -27,6 +27,8 @@ add_subdirectory(imported)
 
 if (UNIX)
     add_subdirectory(lnx)
+elseif (WIN32)
+    add_subdirectory(win)
 endif()
 
 #if ANDROID

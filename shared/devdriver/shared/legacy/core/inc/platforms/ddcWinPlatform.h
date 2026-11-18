@@ -48,6 +48,8 @@ static_assert(false, "This header is for user mode windows, and it does not work
 #define WIN32_NO_STATUS
 #include <Windows.h>
 #undef WIN32_NO_STATUS
+#include <winternl.h>
+#include <ntstatus.h>
 
 #include <intrin.h>
 

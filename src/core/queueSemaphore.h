@@ -30,6 +30,10 @@
 #endif
 #include "palQueueSemaphore.h"
 #include "palMutex.h"
+#if PAL_WDDM_BUILD
+#include "core/os/wddm/wddmTransport.h"
+#include <atomic>
+#endif
 
 namespace Pal
 {
@@ -55,9 +59,13 @@ public:
     virtual Result Open(const QueueSemaphoreOpenInfo& openInfo);
     virtual Result OpenExternal(const ExternalQueueSemaphoreOpenInfo& openInfo);
 
-#if ( PAL_AMDGPU_BUILD)
+#if PAL_AMDGPU_BUILD || PAL_WDDM_BUILD
     virtual OsExternalHandle ExportExternalHandle(
         const QueueSemaphoreExportInfo& exportInfo) const override;
+#endif
+
+#if PAL_WDDM_BUILD
+    const Wddm::SyncObject& NativeSync() const { return m_wddmSync; }
 #endif
 
 #if PAL_AMDGPU_BUILD
@@ -100,6 +108,12 @@ protected:
     Device*const  m_pDevice;
 
     uint64  m_maxWaitsPerSignal;  // Upper limit to number of simultaneous unconsumed signals on this semaphore.
+#if PAL_WDDM_BUILD
+    Wddm::SyncObject m_wddmSync = {};
+    std::atomic<uint64> m_wddmLastSubmitted = 0;
+    bool m_wddmSharedViaNtHandle = false;
+    bool m_wddmMonitoredCounting = false;
+#endif
 
 #if PAL_AMDGPU_BUILD
     amdgpu_semaphore_handle m_hSemaphore;

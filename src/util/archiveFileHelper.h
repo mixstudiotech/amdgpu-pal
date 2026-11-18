@@ -27,7 +27,11 @@
 #include "palLiterals.h"
 
 // linux
+#if defined(_WIN32)
+#include "palWin.h"
+#else
 #include <sys/file.h>
+#endif
 
 namespace Util
 {
@@ -35,8 +39,13 @@ namespace Util
 namespace ArchiveFileHelper
 {
 constexpr int32 InvalidSysCall = -1;
-typedef int32  FileHandle;
+#if defined(_WIN32)
+using FileHandle = void*;
+const FileHandle InvalidFileHandle = INVALID_HANDLE_VALUE;
+#else
+typedef int32 FileHandle;
 const FileHandle InvalidFileHandle = InvalidFd;
+#endif
 
 char* GenerateFullPath(
     char*                      pStringBuffer,

@@ -109,6 +109,8 @@ public:
 #if   defined(__unix__)
     /// On Linux, a handle to an OS event primitive is a file descriptor, which is just an int.
     typedef int32 EventHandle;
+#elif defined(_WIN32)
+    typedef void* EventHandle;
 #endif
 
     /// Returns a handle to the actual OS event primitive associated with this object.

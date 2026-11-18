@@ -32,7 +32,12 @@ function(amd_target_options name)
         return()
     endif()
 
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+    if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        target_compile_options(${name} PRIVATE /GR- /EHs-c- /Zc:__cplusplus /volatile:iso)
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            target_compile_options(${name} PRIVATE /clang:-fno-math-errno /clang:-fno-strict-aliasing)
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
         # [GCC] Exceptions
         #   https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_exceptions.html
         #

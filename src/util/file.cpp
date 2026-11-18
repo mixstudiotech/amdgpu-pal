@@ -116,8 +116,13 @@ Result File::GetStat(
 
     // On non-MSVC the function/struct to retrieve file status information is named `stat` (no underscore)
     // There's also no distinction between `stat` and `stat64` outside of the kernel.
+#if defined(_WIN32)
+    struct _stat64 status{};
+    const int32 ret = _stat64(pFilename, &status);
+#else
     struct stat status{};
     const int32 ret = stat(pFilename, &status);
+#endif
 
     const bool isRegular = status.st_mode & S_IFREG;
     const bool isDir     = status.st_mode & S_IFDIR;
@@ -487,7 +492,11 @@ void File::Seek(
 {
     if (m_pFileHandle != nullptr)
     {
+#if defined(_WIN32)
+        const int32 ret = _fseeki64(m_pFileHandle, offset, static_cast<int>(pos));
+#else
         const int32 ret = fseeko64(m_pFileHandle, offset, static_cast<int>(pos));
+#endif
         PAL_ASSERT(ret == 0);
     }
 }

@@ -224,6 +224,10 @@ ArchiveFile::~ArchiveFile()
     // No need to flush the view here because we're about to close the file which will implicitly perform a flush.
     m_fileView.UnMap(false);
     m_fileMapping.Close();
+#if defined(_WIN32)
+    // Windows FileMapping duplicates the supplied file handle.
+    ArchiveFileHelper::CloseFileHandle(m_hFile);
+#endif
 }
 
 // =====================================================================================================================

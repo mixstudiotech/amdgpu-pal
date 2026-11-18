@@ -558,6 +558,26 @@ void CmdStream::Reset(
 }
 
 // =====================================================================================================================
+// The generic DMA stream has no hardware chaining. Windows submits each chunk
+// separately and requires its native SDMA size alignment. The constructor has
+// already reserved worst-case alignment padding outside command reservations.
+void CmdStream::EndCurrentChunk(bool)
+{
+#if PAL_WDDM_BUILD
+    if (m_engineType == EngineTypeDma)
+    {
+        auto* chunk = m_chunkList.Back();
+        const uint32 padding = Pow2Align(chunk->DwordsAllocated(), m_sizeAlignDwords) - chunk->DwordsAllocated();
+        if (padding != 0)
+        {
+            // SDMA opcode 0 with count 0 is one DWORD NOP. Preserve the real
+            // busy-tracker postamble and initialize every submitted tail DWORD.
+            memset(chunk->GetSpace(padding), 0, size_t(padding) * sizeof(uint32));
+        }
+    }
+#endif
+}
+
 // A basic implementation of End. If any IP-specific subclasses need more functionality (e.g., chaining) they should
 // override EndCurrentChunk.
 Result CmdStream::End()

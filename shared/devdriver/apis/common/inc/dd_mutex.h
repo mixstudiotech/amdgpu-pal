@@ -38,10 +38,12 @@ class Mutex
 {
 #if   defined(__linux__)
     static const uint32_t OsMutexSize = sizeof(pthread_mutex_t);
+#elif defined(_WIN32)
+    static const uint32_t OsMutexSize = sizeof(void*); // SRWLOCK
 #endif
 
 private:
-    uint8_t m_osMutexData[OsMutexSize];
+    alignas(void*) uint8_t m_osMutexData[OsMutexSize];
 
 public:
     Mutex() noexcept;
@@ -99,10 +101,12 @@ class RWLock
 {
 #if   defined(__linux__)
     static const uint32_t OsRWLockSize = sizeof(pthread_rwlock_t);
+#elif defined(_WIN32)
+    static const uint32_t OsRWLockSize = sizeof(void*); // SRWLOCK
 #endif
 
 private:
-    uint8_t m_osLockData[OsRWLockSize];
+    alignas(void*) uint8_t m_osLockData[OsRWLockSize];
 
 public:
     enum LockType

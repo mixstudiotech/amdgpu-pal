@@ -30,6 +30,8 @@
 
 #if PAL_AMDGPU_BUILD
 #include "core/os/amdgpu/amdgpuHeaders.h"
+#elif PAL_WDDM_BUILD
+#include "core/os/wddm/wddmHeaders.h"
 #endif
 
 #include "core/layers/dbgOverlay/dbgOverlayPlatform.h"

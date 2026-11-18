@@ -100,7 +100,7 @@ Result UserMarkerHistoryTraceSource::WriteUserMarkerHistoryChunks()
             .pHeader            = &header,
             .headerSize         = sizeof(TraceChunk::UserMarkerHistoryHeader),
             .pData              = entry.pUserMarkerHistory,
-            .dataSize           = header.numOps * sizeof(uint32),
+            .dataSize           = static_cast<int64>(header.numOps * sizeof(uint32)),
             .enableCompression  = false
         };
         memcpy(info.id, TraceChunk::UserMarkerHistoryChunkId, TextIdentifierSize);

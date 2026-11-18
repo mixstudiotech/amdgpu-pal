@@ -127,7 +127,8 @@ PrivateScreen::PrivateScreen(
     m_bridgeCount(0)
 {
     memset(m_pImages, 0, sizeof(m_pImages));
-    memset(m_properties.pFormats, 0, m_properties.numFormats * sizeof(SwizzledFormat));
+    // The list holds MaxPrivateScreenFormats entries; a KMD display can report more format codes.
+    memset(m_properties.pFormats, 0, Min(m_properties.numFormats, MaxPrivateScreenFormats) * sizeof(SwizzledFormat));
     memset(&m_displayMode, 0, sizeof(PrivateDisplayMode));
 }
 

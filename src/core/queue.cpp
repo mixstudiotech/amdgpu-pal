@@ -1258,6 +1258,82 @@ Result Queue::Delay(
     return result;
 }
 
+#if PAL_WDDM_BUILD
+// =====================================================================================================================
+// Acquires the keyed mutex of an opened external GPU memory object before the following work on this queue. Native
+// queue slot 7 (31e690): executed at once unless the queue is stalled, in which case it is batched (native command 6).
+// NOTE: Part of the public IQueue interface.
+Result Queue::AcquireKeyedMutex(
+    IGpuMemory* pGpuMemory,
+    uint64      key,
+    uint64      timeoutMs)
+{
+    Result result = Result::Success;
+
+    if (m_stalled == false)
+    {
+        result = pGpuMemory->AcquireKeyedMutex(this, key, timeoutMs);
+    }
+    else
+    {
+        // Check the stalled state again under the lock, as Delay() does.
+        MutexAuto lock(&m_batchedCmdsLock);
+        if (m_stalled)
+        {
+            BatchedQueueCmdData cmdData
+            {
+                .command    = BatchedQueueCmd::AcquireKeyedMutex,
+                .keyedMutex = { pGpuMemory, key, timeoutMs }
+            };
+
+            result = m_batchedCmds.PushBack(cmdData);
+        }
+        else
+        {
+            result = pGpuMemory->AcquireKeyedMutex(this, key, timeoutMs);
+        }
+    }
+
+    return result;
+}
+
+// =====================================================================================================================
+// Releases the keyed mutex of an opened external GPU memory object after the previous work on this queue. Native queue
+// slot 8 (31e7a0), batched as native command 7 while the queue is stalled.
+// NOTE: Part of the public IQueue interface.
+Result Queue::ReleaseKeyedMutex(
+    IGpuMemory* pGpuMemory,
+    uint64      key)
+{
+    Result result = Result::Success;
+
+    if (m_stalled == false)
+    {
+        result = pGpuMemory->ReleaseKeyedMutex(this, key);
+    }
+    else
+    {
+        MutexAuto lock(&m_batchedCmdsLock);
+        if (m_stalled)
+        {
+            BatchedQueueCmdData cmdData
+            {
+                .command    = BatchedQueueCmd::ReleaseKeyedMutex,
+                .keyedMutex = { pGpuMemory, key, 0 }
+            };
+
+            result = m_batchedCmds.PushBack(cmdData);
+        }
+        else
+        {
+            result = pGpuMemory->ReleaseKeyedMutex(this, key);
+        }
+    }
+
+    return result;
+}
+#endif
+
 // =====================================================================================================================
 // Inserts a delay of a specified amount of time after a vsync on a private screen. Only supported on Timer Queues.
 // NOTE: Part of the public IQueue interface.
@@ -1555,6 +1631,20 @@ Result Queue::ReleaseFromStalledState(
     bool hasSubmit = false;
     MutexAuto lock(&m_batchedCmdsLock);
 
+#if PAL_WDDM_BUILD
+    // A producer's signal has been queued, but need not have executed yet.
+    // Restore its GPU dependency before every kind of batched command, and
+    // also before future commands when this batch is empty. Timer Delay,
+    // signals, fence association and another stalled wait can all precede
+    // the first command-buffer Submit on Windows.
+    if (pWaitingSemaphore != nullptr)
+    {
+        result = pWaitingSemaphore->WaitNoBatching(this, value);
+        if (result != Result::Success) { return result; }
+        hasSubmit = true;
+    }
+#endif
+
     // Execute all of the batched-up commands as long as we don't become stalled again and don't encounter an error.
     while ((m_batchedCmds.NumElements() > 0) && (stalledAgain == false) && (result == Result::Success))
     {
@@ -1620,6 +1710,18 @@ Result Queue::ReleaseFromStalledState(
             result = DoAssociateFenceWithLastSubmit(cmdData.associateFence.pFence);
             break;
 
+#if PAL_WDDM_BUILD
+        // Native 31f590 commands 6 and 7: the GPU memory object's slots 10 and 11 with this queue.
+        case BatchedQueueCmd::AcquireKeyedMutex:
+            result = cmdData.keyedMutex.pGpuMemory->AcquireKeyedMutex(this,
+                                                                      cmdData.keyedMutex.key,
+                                                                      cmdData.keyedMutex.timeoutMs);
+            break;
+
+        case BatchedQueueCmd::ReleaseKeyedMutex:
+            result = cmdData.keyedMutex.pGpuMemory->ReleaseKeyedMutex(this, cmdData.keyedMutex.key);
+            break;
+#endif
         }
     }
 

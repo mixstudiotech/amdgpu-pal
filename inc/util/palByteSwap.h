@@ -33,6 +33,9 @@
 #pragma once
 
 #include "palUtil.h"
+#if defined(_MSC_VER)
+#include <stdlib.h>
+#endif
 
 namespace Util
 {
@@ -41,7 +44,7 @@ PAL_FORCE_INLINE constexpr bool IsHostBE()
 {
 #if (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)) || defined(_M_PPC)
     return true;
-#elif (defined(__BYTE_ORDER__) && (__BYTE_ORDER__== __ORDER_LITTLE_ENDIAN__))
+#elif (defined(__BYTE_ORDER__) && (__BYTE_ORDER__== __ORDER_LITTLE_ENDIAN__)) || defined(_WIN32)
     return false;
 #else
     #error Unable to determine host byte order
@@ -60,6 +63,10 @@ PAL_FORCE_INLINE constexpr bool IsHostBE()
 PAL_FORCE_INLINE uint16 SwapBytes16(uint16 v) { return __builtin_bswap16(v); }
 PAL_FORCE_INLINE uint32 SwapBytes32(uint32 v) { return __builtin_bswap32(v); }
 PAL_FORCE_INLINE uint64 SwapBytes64(uint64 v) { return __builtin_bswap64(v); }
+#elif defined(_MSC_VER)
+PAL_FORCE_INLINE uint16 SwapBytes16(uint16 v) { return _byteswap_ushort(v); }
+PAL_FORCE_INLINE uint32 SwapBytes32(uint32 v) { return _byteswap_ulong(v); }
+PAL_FORCE_INLINE uint64 SwapBytes64(uint64 v) { return _byteswap_uint64(v); }
 #else
 #error Unable to determine compiler intrinsics
 #endif

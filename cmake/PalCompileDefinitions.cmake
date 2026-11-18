@@ -134,6 +134,7 @@ function(pal_compile_definitions TARGET)
     target_compile_definitions(${TARGET} PRIVATE PAL_BUILD_GPUUTIL=$<BOOL:${PAL_BUILD_GPUUTIL}>)
 
     target_compile_definitions(${TARGET} PRIVATE PAL_BUILD_NULL_DEVICE=$<BOOL:${PAL_BUILD_NULL_DEVICE}>)
+    target_compile_definitions(${TARGET} PUBLIC PAL_WDDM_BUILD=$<BOOL:${PAL_WDDM_BUILD}>)
 
     if(PAL_ENABLE_PRINTS_ASSERTS)
         target_compile_definitions(${TARGET} PUBLIC

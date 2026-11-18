@@ -104,6 +104,8 @@ typedef void (*ThreadFunction)(void* pThreadParameter);
 
 #if   defined(DD_PLATFORM_WINDOWS_KM)
     #include <platforms/ddWinKernelPlatform.h>
+#elif defined(DD_PLATFORM_WINDOWS_UM)
+    #include <platforms/ddWinPlatform.h>
 #elif defined(DD_PLATFORM_DARWIN_UM)
     #include <platforms/ddPosixPlatform.h>
 #elif defined(DD_PLATFORM_LINUX_UM)
@@ -118,6 +120,14 @@ typedef void (*ThreadFunction)(void* pThreadParameter);
     #endif
 
     #if __x86_64__
+        #define DD_ARCH_BITS 64
+    #else
+        #define DD_ARCH_BITS 32
+    #endif
+#endif
+
+#if !defined(DD_ARCH_BITS)
+    #if defined(_WIN64) || defined(__x86_64__) || defined(__aarch64__)
         #define DD_ARCH_BITS 64
     #else
         #define DD_ARCH_BITS 32

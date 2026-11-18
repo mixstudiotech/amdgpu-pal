@@ -520,7 +520,7 @@ bool BitMaskScanForward(
 
     if (mask != 0)
     {
-#if   defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
         *pIndex = (sizeof(T) > 4) ? __builtin_ctzll(mask) : __builtin_ctz(static_cast<uint32>(mask));
 #else
         uint32 index = 0;
@@ -547,7 +547,7 @@ bool BitMaskScanReverse(
 
     if (mask != 0)
     {
-#if   defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
         *pIndex = (sizeof(T) > 4) ? (63u - __builtin_clzll(mask)) : (31u - __builtin_clz(static_cast<uint32>(mask)));
 #else
         uint32 index = 31u;
@@ -870,7 +870,11 @@ inline int Strcasecmp(
     PAL_ASSERT(pSrc != nullptr);
     PAL_ASSERT(pDst != nullptr);
 
+#if defined(_WIN32)
+    return _stricmp(pDst, pSrc);
+#else
     return strcasecmp(pDst, pSrc);
+#endif
 }
 
 /// Performs a safe strcpy by requiring the destination buffer size.
@@ -923,6 +927,8 @@ inline void Strncat(
     // Compute the length of the destination string to prevent buffer overruns.
     const size_t dstLength = strlen(pDst);
     strncat(pDst, pSrc, (sizeDst - dstLength - 1));
+#elif defined(_WIN32)
+    strncat_s(pDst, sizeDst, pSrc, _TRUNCATE);
 #endif
 }
 
@@ -938,6 +944,8 @@ inline char* Strtok(
 
 #if   defined(__unix__)
     pToken = strtok_r(str, delim, buf);
+#elif defined(_WIN32)
+    pToken = strtok_s(str, delim, buf);
 #endif
 
     return pToken;

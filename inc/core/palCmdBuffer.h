@@ -2070,7 +2070,13 @@ using UniquePresentKey = uint64;
 
 /// Convert an OS window handle to a unique present key.
 inline UniquePresentKey PresentKeyFromOsWindowHandle(OsWindowHandle handle)
-    { return handle.win; }
+{
+#if defined(_WIN32)
+    return reinterpret_cast<UniquePresentKey>(handle);
+#else
+    return handle.win;
+#endif
+}
 /// Convert any pointer to a unique present key.
 template <typename T>
 constexpr inline UniquePresentKey PresentKeyFromPointer(T* ptr) { return reinterpret_cast<UniquePresentKey>(ptr); }

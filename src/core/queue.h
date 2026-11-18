@@ -115,6 +115,10 @@ enum class BatchedQueueCmd : uint32
     AssociateFenceWithLastSubmit, // Identifies a AssociateFenceWithLastSubmit() call
     RemapVirtualMemoryPages,      // Identifies a RemapVirtualMemoryPages() call
     CopyVirtualMemoryPageMappings,// Identifies a CopyVirtualMemoryPageMappings() call
+#if PAL_WDDM_BUILD
+    AcquireKeyedMutex,            // Identifies an AcquireKeyedMutex() call (native batched command 6)
+    ReleaseKeyedMutex,            // Identifies a ReleaseKeyedMutex() call (native batched command 7)
+#endif
 };
 
 // Defines the data payloads for each type of batched-up Queue command.
@@ -164,6 +168,14 @@ struct BatchedQueueCmdData
             bool                                      doNotWait;
         } copyVirtualMemoryPageMappings;
 
+#if PAL_WDDM_BUILD
+        struct
+        {
+            IGpuMemory* pGpuMemory;
+            uint64      key;
+            uint64      timeoutMs;
+        } keyedMutex;
+#endif
     };
 };
 
@@ -301,6 +313,14 @@ public:
     // NOTE: Part of the public IQueue interface.
     virtual Result QueryKernelContextInfo(KernelContextInfo* pKernelContextInfo) const override
         { return Result::ErrorUnavailable; }
+
+#if PAL_WDDM_BUILD
+    // NOTE: Part of the public IQueue interface.
+    virtual Result AcquireKeyedMutex(IGpuMemory* pGpuMemory, uint64 key, uint64 timeoutMs) override;
+
+    // NOTE: Part of the public IQueue interface.
+    virtual Result ReleaseKeyedMutex(IGpuMemory* pGpuMemory, uint64 key) override;
+#endif
 
     // NOTE: Part of the public IDestroyable interface.
     virtual void Destroy() override final;

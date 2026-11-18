@@ -26,6 +26,9 @@
 #include "ddPlatform.h"
 #include "messageChannel.h"
 #include "devDriverServer.h"
+#if defined(DD_PLATFORM_WINDOWS_UM)
+#include "win/ddWinPipeMsgTransport.h"
+#endif
 #include "protocolServer.h"
 #include "protocols/ddInfoService.h"
 #include "protocols/driverControlServer.h"
@@ -257,7 +260,11 @@ namespace DevDriver
         {
             case TransportType::Local:
                 // On non windows platforms we try to use an AF_UNIX socket for communication
+#if defined(DD_PLATFORM_WINDOWS_UM)
+                result = WinPipeMsgTransport::TestConnection(hostInfo, timeout);
+#else
                 result = SocketMsgTransport::TestConnection(hostInfo, timeout);
+#endif
                 break;
 
             default:

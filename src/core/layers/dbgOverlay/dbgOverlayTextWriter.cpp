@@ -152,6 +152,7 @@ void TextWriter::WriteVisualConfirm(
     // Add the index of the GPU that is presenting. This is formatted like this:
     // Presenting GPU:    1    2    3    4
     constexpr uint32 NumSpacing     = 5;
+    constexpr uint32 MaxLdaChainLength = 4;
 
     Util::Snprintf(&overlayText[textLines][0], BufSize, "Presenting GPU: ");
 

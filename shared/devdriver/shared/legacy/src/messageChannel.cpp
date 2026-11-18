@@ -25,6 +25,9 @@
 
 #include "ddPlatform.h"
 #include "messageChannel.h"
+#if defined(DD_PLATFORM_WINDOWS_UM)
+#include "win/ddWinPipeMsgTransport.h"
+#endif
 
 #define DD_SUPPORT_SOCKET_TRANSPORT ((DD_PLATFORM_WINDOWS_UM && DEVDRIVER_BUILD_REMOTE_TRANSPORT)|| (DD_PLATFORM_IS_POSIX))
 #if DD_SUPPORT_SOCKET_TRANSPORT
@@ -59,7 +62,19 @@ namespace DevDriver
             {
                 DD_ASSERT_REASON("Message channel is not correctly implemented for Windows KM yet - CreateMessageChannel will fail and return NULL");
             }
-// Windows is handled above, so we check posix UM platforms here.
+#elif defined(DD_PLATFORM_WINDOWS_UM)
+            if (createInfo.hostInfo.type == TransportType::Local)
+            {
+                using MsgChannelPipe = MessageChannel<WinPipeMsgTransport>;
+                pMsgChannel = DD_NEW(MsgChannelPipe, createInfo.allocCb)(createInfo.allocCb, createInfo.channelInfo, createInfo.hostInfo);
+            }
+#if DD_SUPPORT_SOCKET_TRANSPORT
+            else if (createInfo.hostInfo.type == TransportType::Remote)
+            {
+                using MsgChannelSocket = MessageChannel<SocketMsgTransport>;
+                pMsgChannel = DD_NEW(MsgChannelSocket, createInfo.allocCb)(createInfo.allocCb, createInfo.channelInfo, createInfo.hostInfo);
+            }
+#endif
 #elif DD_PLATFORM_IS_POSIX
             if ((createInfo.hostInfo.type == TransportType::Remote) |
                 (createInfo.hostInfo.type == TransportType::Local))

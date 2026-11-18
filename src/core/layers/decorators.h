@@ -1045,6 +1045,13 @@ public:
         void*                                 pPlacementAddr,
         IQueueSemaphore**                     ppQueueSemaphore) override;
 
+#if PAL_WDDM_BUILD
+    virtual Result OpenExternalHandleByName(
+        const ExternalHandleNameInfo& info,
+        OsExternalHandle*             pHandle) override
+        { return m_pNextLayer->OpenExternalHandleByName(info, pHandle); }
+#endif
+
 #if ( PAL_AMDGPU_BUILD)
     virtual Result QueryGpuMemoryBudgetInfo(
         GpuMemoryBudgetInfo* pInfo) override
@@ -2696,9 +2703,17 @@ public:
     virtual Result Unmap() override
         { return m_pNextLayer->Unmap(); }
 
-#if  PAL_AMDGPU_BUILD
+#if  PAL_AMDGPU_BUILD || PAL_WDDM_BUILD
     virtual OsExternalHandle ExportExternalHandle(const GpuMemoryExportInfo& handleInfo) const override
         { return m_pNextLayer->ExportExternalHandle(handleInfo); }
+#endif
+
+#if PAL_WDDM_BUILD
+    virtual Result AcquireKeyedMutex(IQueue* pQueue, uint64 key, uint64 timeoutMs) override
+        { return m_pNextLayer->AcquireKeyedMutex(NextQueue(pQueue), key, timeoutMs); }
+
+    virtual Result ReleaseKeyedMutex(IQueue* pQueue, uint64 key) override
+        { return m_pNextLayer->ReleaseKeyedMutex(NextQueue(pQueue), key); }
 #endif
 
     // Part of the IDestroyable public interface.
@@ -3240,6 +3255,14 @@ public:
     virtual Result QueryKernelContextInfo(KernelContextInfo* pKernelContextInfo) const override
         { return m_pNextLayer->QueryKernelContextInfo(pKernelContextInfo); }
 
+#if PAL_WDDM_BUILD
+    virtual Result AcquireKeyedMutex(IGpuMemory* pGpuMemory, uint64 key, uint64 timeoutMs) override
+        { return m_pNextLayer->AcquireKeyedMutex(NextGpuMemory(pGpuMemory), key, timeoutMs); }
+
+    virtual Result ReleaseKeyedMutex(IGpuMemory* pGpuMemory, uint64 key) override
+        { return m_pNextLayer->ReleaseKeyedMutex(NextGpuMemory(pGpuMemory), key); }
+#endif
+
 protected:
     IQueue*                      m_pNextLayer;
     const DeviceDecorator*const  m_pDevice;
@@ -3266,7 +3289,7 @@ public:
     virtual bool HasStalledQueues() override
         { return m_pNextLayer->HasStalledQueues(); }
 
-#if  PAL_AMDGPU_BUILD
+#if  PAL_AMDGPU_BUILD || PAL_WDDM_BUILD
     virtual OsExternalHandle ExportExternalHandle(
         const QueueSemaphoreExportInfo& exportInfo) const override
         { return m_pNextLayer->ExportExternalHandle(exportInfo); }

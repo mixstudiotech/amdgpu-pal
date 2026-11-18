@@ -57,6 +57,10 @@ public:
     /// @note pthread_cond_init will not fail as called
     ConditionVariable() noexcept : m_osCondVariable {} { pthread_cond_init(&m_osCondVariable, nullptr); }
     ~ConditionVariable() noexcept { pthread_cond_destroy(&m_osCondVariable); };
+#elif defined(_WIN32)
+    typedef CONDITION_VARIABLE ConditionVariableData;
+    ConditionVariable() noexcept : m_osCondVariable(CONDITION_VARIABLE_INIT) {}
+    ~ConditionVariable() noexcept = default;
 #endif
 
     /// Atomically releases the given mutex lock and initiates a sleep waiting for WakeOne() or WakeAll() to be called

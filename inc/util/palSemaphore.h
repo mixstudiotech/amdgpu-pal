@@ -94,11 +94,17 @@ public:
     void Post(uint32 postCount = 1);
 
     /// Specifies the largest value supported by Init's maximumCount parameter.
+#if defined(_WIN32)
+    static constexpr uint32 MaximumCountLimit = LONG_MAX;
+#else
     static constexpr uint32 MaximumCountLimit = SEM_VALUE_MAX;
+#endif
 
 private:
 #if   defined(__unix__)
     sem_t m_osSemaphore;  // Linux-specific semaphore handle.
+#elif defined(_WIN32)
+    void* m_osSemaphore;
 #endif
 
     PAL_DISALLOW_COPY_AND_ASSIGN(Semaphore);

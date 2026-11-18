@@ -38,10 +38,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if !defined(_WIN32)
 #include <sys/file.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
 #include <time.h>
 
 // stl
@@ -134,6 +138,25 @@ Result ArchiveFileHelper::ReadDirect(
     void*      pBuffer,
     size_t     readSize)
 {
+#if defined(_WIN32)
+    if (!pBuffer && readSize) { return Result::ErrorInvalidPointer; }
+    LARGE_INTEGER size;
+    if (!GetFileSizeEx(hFile, &size)) { return Result::ErrorUnknown; }
+    if (fileOffset > static_cast<uint64>(size.QuadPart)) { return Result::ErrorInvalidValue; }
+    LARGE_INTEGER offset; offset.QuadPart = fileOffset;
+    if (!SetFilePointerEx(hFile, offset, nullptr, FILE_BEGIN)) { return Result::ErrorUnknown; }
+    size_t remaining = Min(readSize, static_cast<size_t>(size.QuadPart) - fileOffset);
+    auto* cursor = static_cast<uint8*>(pBuffer);
+    while (remaining)
+    {
+        const DWORD request = static_cast<DWORD>(Min(remaining, static_cast<size_t>(MAXDWORD)));
+        DWORD actual = 0;
+        if (!ReadFile(hFile, cursor, request, &actual, nullptr) || actual == 0) { return Result::ErrorUnknown; }
+        cursor += actual; remaining -= actual;
+    }
+    return Result::Success;
+#else
+
     PAL_ASSERT(hFile   != ArchiveFileHelper::InvalidFileHandle);
     PAL_ASSERT(pBuffer != nullptr);
 
@@ -173,6 +196,8 @@ Result ArchiveFileHelper::ReadDirect(
     }
 
     return result;
+
+#endif
 }
 
 // =====================================================================================================================
@@ -183,6 +208,23 @@ Result ArchiveFileHelper::WriteDirect(
     const void* pData,
     size_t      writeSize)
 {
+#if defined(_WIN32)
+    if (!pData && writeSize) { return Result::ErrorInvalidPointer; }
+    LARGE_INTEGER offset; offset.QuadPart = fileOffset;
+    if (!SetFilePointerEx(hFile, offset, nullptr, FILE_BEGIN)) { return Result::ErrorUnknown; }
+    auto* cursor = static_cast<const uint8*>(pData);
+    size_t remaining = writeSize;
+    while (remaining)
+    {
+        const DWORD request = static_cast<DWORD>(Min(remaining, static_cast<size_t>(MAXDWORD)));
+        DWORD actual = 0;
+        if (!WriteFile(hFile, cursor, request, &actual, nullptr) || actual == 0)
+            { return GetLastError() == ERROR_DISK_FULL ? Result::ErrorDiskFull : Result::ErrorUnknown; }
+        cursor += actual; remaining -= actual;
+    }
+    return Result::Success;
+#else
+
     PAL_ASSERT(hFile != ArchiveFileHelper::InvalidFileHandle);
     PAL_ASSERT(pData != nullptr);
 
@@ -208,6 +250,8 @@ Result ArchiveFileHelper::WriteDirect(
     }
 
     return result;
+
+#endif
 }
 
 // =====================================================================================================================
@@ -215,6 +259,10 @@ Result ArchiveFileHelper::WriteDirect(
 Result ArchiveFileHelper::CreateDir(
     const char* pPathName)
 {
+#if defined(_WIN32)
+    return MkDirRecursively(pPathName);
+#else
+
     Result result = Result::Success;
 
     // TODO - Consider using MkDirRecursively() (implemented in lnxSysUtil.cpp) on linux as well.
@@ -243,6 +291,8 @@ Result ArchiveFileHelper::CreateDir(
     }
 
     return result;
+
+#endif
 }
 
 // =====================================================================================================================
@@ -251,6 +301,23 @@ Result ArchiveFileHelper::CreateFileInternal(
     const char*                pFileName,
     const ArchiveFileOpenInfo* pOpenInfo)
 {
+#if defined(_WIN32)
+    if (!pFileName || !pOpenInfo) { return Result::ErrorInvalidPointer; }
+    Result result = CreateDir(pOpenInfo->pFilePath);
+    if (IsErrorResult(result)) { return result; }
+    HANDLE file = CreateFileA(pFileName, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE)
+    {
+        const DWORD error = GetLastError();
+        return error == ERROR_FILE_EXISTS || error == ERROR_ALREADY_EXISTS ? Result::AlreadyExists : Result::ErrorUnavailable;
+    }
+    result = WriteDirectBlankArchiveFile(file, pOpenInfo);
+    if (result == Result::Success && !FlushFileBuffers(file)) { result = Result::ErrorUnknown; }
+    CloseHandle(file);
+    if (result != Result::Success) { DeleteFileA(pFileName); }
+    return result;
+#else
+
     PAL_ASSERT(pFileName != nullptr);
     PAL_ASSERT(pOpenInfo != nullptr);
 
@@ -297,6 +364,8 @@ Result ArchiveFileHelper::CreateFileInternal(
     }
 
     return result;
+
+#endif
 }
 
 // =====================================================================================================================
@@ -345,6 +414,21 @@ Result ArchiveFileHelper::OpenFileInternal(
     const char*                    pFileName,
     const ArchiveFileOpenInfo*     pOpenInfo)
 {
+#if defined(_WIN32)
+    if (!pOutHandle || !pFileName || !pOpenInfo) { return Result::ErrorInvalidPointer; }
+    *pOutHandle = InvalidFileHandle;
+    // Readers may coexist with one writer; FILE_SHARE_WRITE is denied by a writer to enforce single-writer ownership.
+    HANDLE file = CreateFileA(pFileName, GENERIC_READ | (pOpenInfo->allowWriteAccess ? GENERIC_WRITE : 0),
+        FILE_SHARE_READ | (pOpenInfo->allowWriteAccess ? 0 : FILE_SHARE_WRITE), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE)
+    {
+        const DWORD error = GetLastError();
+        return error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND ? Result::NotFound : Result::ErrorUnavailable;
+    }
+    *pOutHandle = file;
+    return Result::Success;
+#else
+
     PAL_ASSERT(pOutHandle != nullptr);
     PAL_ASSERT(pFileName  != nullptr);
     PAL_ASSERT(pOpenInfo  != nullptr);
@@ -385,6 +469,8 @@ Result ArchiveFileHelper::OpenFileInternal(
     }
 
     return result;
+
+#endif
 }
 
 // =====================================================================================================================
@@ -470,7 +556,11 @@ bool ArchiveFileHelper::ValidateFooter(
 void ArchiveFileHelper::CloseFileHandle(
     FileHandle hFile)
 {
+#if defined(_WIN32)
+    if (hFile != InvalidFileHandle && hFile) { CloseHandle(hFile); }
+#else
     close(hFile);
+#endif
 }
 
 // =====================================================================================================================
@@ -493,6 +583,11 @@ Result ArchiveFileHelper::DeleteFileInternal(
 size_t ArchiveFileHelper::GetFileSize(
     FileHandle hFile)
 {
+#if defined(_WIN32)
+    LARGE_INTEGER size;
+    return GetFileSizeEx(hFile, &size) ? static_cast<size_t>(size.QuadPart) : 0;
+#else
+
     size_t size = 0;
 
     struct stat statBuf;
@@ -502,6 +597,8 @@ size_t ArchiveFileHelper::GetFileSize(
     }
 
     return size;
+
+#endif
 }
 
 } //namespace Util

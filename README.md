@@ -142,3 +142,15 @@ PAL contains code written by third parties:
 * dds is distributed under the terms of MIT License, see src/util/imported/dds/dds-license
 * hsa.h and amd_hsa_*.h are distributed under the terms of the University of Illinois/NCSA Open Source License, see the license embedded into src/core/imported/hsa/hsa.h
 * AMDHSAKernelDescriptor.h is distributed under the terms of Apache License 2.0 with LLVM Exceptions, see https://llvm.org/LICENSE.txt
+
+## Native Windows WDDM backend
+
+The native x64 Windows backend is in `src/core/os/wddm`. Build PAL and its validation programs with:
+
+```powershell
+powershell -NoProfile -File tools/buildWddm.ps1
+```
+
+The current private AMD interface profile is restricted to Radeon 8060S (`1002:1586`, revision `c1`) and driver package `32.0.32015.7029`. Unknown profiles fail explicitly. See [Windows backend evidence and validation](doc/wddm-backend-evidence.md) for source pins, runtime results and the remaining parity gaps. This reconstruction is not a claim of complete equivalence with AMD's Windows PAL.
+
+After an authorized test-machine reboot, final public PAL tests passed graphics/compute writes, synchronization and read-zero reservation restoration. The windowed FIFO test passed24 GPU clears/full-pixel readbacks/native presents, resize and cleanup. Exact original function symbols remain unverified; [the symbol audit](tools/auditWddmSymbols.md) fails to pass without a vendor reference.

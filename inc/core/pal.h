@@ -73,6 +73,12 @@ inline bool operator==(const Pal::OsWindowHandle& lhs, const Pal::OsWindowHandle
     { return (lhs.pSurface == rhs.pSurface); }
 inline bool operator!=(const Pal::OsWindowHandle& lhs, const Pal::OsWindowHandle& rhs)
     { return (lhs.pSurface != rhs.pSurface); }
+#elif defined(_WIN32)
+typedef void* OsDisplayHandle;
+typedef void* OsExternalHandle;
+typedef void* OsVideoSessionHandle;
+typedef void* OsWindowHandle;
+constexpr OsWindowHandle NullWindowHandle = nullptr;
 #else
 #error "Unsupported OS platform detected!"
 #endif

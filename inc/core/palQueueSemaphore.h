@@ -138,6 +138,11 @@ struct QueueSemaphoreExportInfo
         uint32 u32All;                        ///< Flags packed as 32-bit uint.
     } flags;                                  ///< External queue semaphore export flags.
 
+#if PAL_WDDM_BUILD
+    const void*    pSecurityAttributes;       ///< Optional SECURITY_ATTRIBUTES for an NT handle export.
+    const wchar_t* pName;                     ///< Optional object name for an NT handle export.
+    uint32         ntHandleAccess;            ///< Access mask requested for an NT handle export.
+#endif
 };
 
 /**
@@ -202,7 +207,7 @@ public:
     virtual Result SignalSemaphoreValue(
         uint64                   value) = 0;
 
-#if  PAL_AMDGPU_BUILD
+#if  PAL_AMDGPU_BUILD || PAL_WDDM_BUILD
     /// Returns an OS-specific handle which can be used to refer to this semaphore object across processes. This will
     /// return a null or invalid handle if the object was not created with the external create flag set.
     ///

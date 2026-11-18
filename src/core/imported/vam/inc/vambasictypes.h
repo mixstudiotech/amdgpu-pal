@@ -45,6 +45,8 @@
 #ifndef VAM_CLIENT_WINDOWS_SUBSYSTEM
 #define DEFINE_MSWIN_DATATYPES        1 // For Linux we need to define datatypes
 #endif
+#elif defined(_WIN32)
+#include <windows.h>
 #elif (defined (BUILDING_CMMQSLIB) || defined(BUILDING_CMM))
 #endif
 
@@ -59,6 +61,8 @@
 #else
 #define ATIAPI_STDCALL  __attribute__((stdcall))
 #endif
+#elif defined(_MSC_VER)
+#define ATIAPI_STDCALL __stdcall
 #else
 #error Unrecognized target to define ATIAPI_STDCALL
 #endif

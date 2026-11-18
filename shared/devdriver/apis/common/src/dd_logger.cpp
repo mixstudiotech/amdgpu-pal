@@ -30,7 +30,12 @@
 #include <stb_sprintf.h>
 
 #include <fcntl.h>
+#if defined(_WIN32)
+#include <io.h>
+#include <sys/stat.h>
+#else
 #include <unistd.h>
+#endif
 
 #include <cstring>
 #include <cstdlib>
@@ -77,7 +82,11 @@ void LogWrite(Logger* pLogger, DD_LOG_LVL level, const char* pLogMsg, uint32_t m
 {
     if (pLogger->type == DD_LOGGER_TYPE_FILE)
     {
-        ssize_t bytesWritten = write(pLogger->file.handle, pLogMsg, msgSize);
+#if defined(_WIN32)
+        const int bytesWritten = _write(pLogger->file.handle, pLogMsg, msgSize);
+#else
+        const ssize_t bytesWritten = write(pLogger->file.handle, pLogMsg, msgSize);
+#endif
         DD_ASSERT((uint32_t)bytesWritten == msgSize);
         (void)bytesWritten;
     }
@@ -174,7 +183,11 @@ DD_RESULT DDLoggerCreateFileLogger(const char* pFilePath, uint32_t filePathSize,
     std::memcpy(pFilePathBuf, pFilePath, filePathSize);
     pFilePathBuf[filePathSize] = '\0';
 
+#if defined(_WIN32)
+    pLogger->file.handle = _open(pFilePathBuf, _O_WRONLY | _O_CREAT | _O_TRUNC | _O_BINARY, _S_IREAD | _S_IWRITE);
+#else
     pLogger->file.handle = open(pFilePathBuf, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IROTH);
+#endif
     if (pLogger->file.handle == -1)
     {
         result = DD_RESULT_COMMON_INVALID_PARAMETER;

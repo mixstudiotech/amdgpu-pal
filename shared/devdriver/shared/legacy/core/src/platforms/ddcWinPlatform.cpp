@@ -23,8 +23,8 @@
  *
  **********************************************************************************************************************/
 
-#include <Windows.h>
 #include <ddPlatform.h>
+#include <Windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <Tdh.h>
@@ -36,7 +36,9 @@
 //      2) Our Windows UM platform is setup correctly
 //      3) Our generic "is Um" macro is setup correctly
 // This is at worst redundant, but when this is wrong it can save us half an hour of debugging the build system
-#error "This file must be compiled for user-mode."
+#if defined(_KERNEL_MODE) || !defined(DD_PLATFORM_WINDOWS_UM) || !DD_PLATFORM_IS_UM
+#error "This file must be compiled for Windows user-mode."
+#endif
 
 #include <Psapi.h>
 

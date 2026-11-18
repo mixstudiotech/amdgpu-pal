@@ -29,8 +29,13 @@
 #undef DD_ASSERT
 #endif
 
+#if defined(_WIN32)
+    #include <intrin.h>
+    #define DD_ALWAYS_ASSERT(condition) do { if (!(condition)) __debugbreak(); } while(0)
+#else
     #include <signal.h>
     #define DD_ALWAYS_ASSERT(condition) do { if (!(condition)) raise(SIGTRAP); } while(0)
+#endif
 
 #ifdef DD_OPT_ASSERTS_ENABLE
     #define DD_ASSERT(condition) DD_ALWAYS_ASSERT(condition)

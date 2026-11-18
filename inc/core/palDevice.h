@@ -1674,6 +1674,14 @@ struct DeviceProperties
             uint32 u32All;                              ///< Flags packed as 32-bit uint.
         } flags;                                        ///< OS-specific property flags.
 
+#if PAL_WDDM_BUILD
+        uint32 luidHighPart;  ///< Adapter LUID HighPart (D3DKMT adapter LUID; the Windows client reports it as
+                              ///  VkPhysicalDeviceIDProperties::deviceLUID and matches it in adapter enumeration).
+        uint32 luidLowPart;   ///< Adapter LUID LowPart.
+        bool   supportNtSharedHandles; ///< GPU memory and synchronization objects can be shared through NT handles
+                                       ///  (the OS is Windows 8 or later).
+#endif
+
         union
         {
             struct
@@ -3110,6 +3118,24 @@ struct HipRuntimeSetup
     uint32 runtimeState;  ///< Runtime-specific enum indicating runtime state
     uint32 ttmpSetupHint; ///< Hint indicating that ttmp values should be initialized
 };
+
+#if PAL_WDDM_BUILD
+/// Kind of named object opened by IDevice::OpenExternalHandleByName().
+enum class ExternalHandleNameType : uint32
+{
+    SharedResource = 0, ///< A shared GPU resource.
+    SyncObject     = 1, ///< A shared synchronization object.
+};
+
+/// Specifies a named NT object to open.  Input structure to IDevice::OpenExternalHandleByName().
+struct ExternalHandleNameInfo
+{
+    ExternalHandleNameType type;                ///< Kind of object the name refers to.
+    const void*            pSecurityAttributes; ///< Optional SECURITY_ATTRIBUTES (handle inheritance and descriptor).
+    const wchar_t*         pName;               ///< Object name.
+    uint32                 access;              ///< Desired access of the returned NT handle.
+};
+#endif
 
 /**
  ***********************************************************************************************************************
@@ -4948,6 +4974,20 @@ public:
         const ExternalQueueSemaphoreOpenInfo& openInfo,
         void*                                 pPlacementAddr,
         IQueueSemaphore**                     ppQueueSemaphore) = 0;
+
+#if PAL_WDDM_BUILD
+    /// Opens an NT handle to a named shared resource or synchronization object, so that it can be opened with
+    /// OpenExternalSharedGpuMemory(), OpenExternalSharedImage() or OpenExternalSharedQueueSemaphore() as an NT handle.
+    /// The returned handle is owned by the caller.
+    ///
+    /// @param [in]  info     Kind of object, object name, security attributes and desired access.
+    /// @param [out] pHandle  The NT handle on success.
+    ///
+    /// @returns Success, Unsupported if named kernel objects cannot be resolved, or an error from the kernel.
+    virtual Result OpenExternalHandleByName(
+        const ExternalHandleNameInfo& info,
+        OsExternalHandle*             pHandle) = 0;
+#endif
 
 #if ( PAL_AMDGPU_BUILD)
     /// Query current gpu memory usage info and budget info of specified heap group of the device.

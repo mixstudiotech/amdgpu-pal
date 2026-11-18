@@ -33,6 +33,9 @@
 
 #include "palAssert.h"
 #include "palUtil.h"
+#if defined(_WIN32)
+#include "palWin.h"
+#endif
 
 #if defined(__unix__)
 #include <dlfcn.h>

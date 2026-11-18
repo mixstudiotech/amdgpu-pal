@@ -41,6 +41,9 @@ namespace Pal
 class IGpuMemory;
 class IDevice;
 class IImage;
+#if PAL_WDDM_BUILD
+class IQueue;
+#endif
 enum class VaRange : uint32;
 
 /// Specifies Base Level priority per GPU memory allocation as a hint to the memory manager in the event it needs to
@@ -521,6 +524,11 @@ enum class ExportHandleType : uint32
 struct GpuMemoryExportInfo
 {
     ExportHandleType            exportType;         ///< Type of handle to use for exporting the memory.
+#if PAL_WDDM_BUILD
+    const void*                 pSecurityAttributes; ///< Optional SECURITY_ATTRIBUTES for an NT handle export.
+    const wchar_t*              pName;               ///< Optional object name for an NT handle export.
+    uint32                      ntHandleAccess;      ///< Access mask requested for an NT handle export.
+#endif
 };
 
 /**
@@ -634,7 +642,7 @@ public:
     ///          + ErrorUnavailable if the GPU memory object is not a real allocation.
     virtual Result Unmap() = 0;
 
-#if  PAL_AMDGPU_BUILD
+#if  PAL_AMDGPU_BUILD || PAL_WDDM_BUILD
     /// Returns an OS-specific handle which can be used to refer to this GPU memory object across processes. This will
     /// return a null or invalid handle if the object was not created with the @ref interprocess create flag set.
     ///
@@ -644,6 +652,27 @@ public:
     ///
     /// @returns An OS-specific handle which can be used to access the GPU memory object across processes.
     virtual OsExternalHandle ExportExternalHandle(const GpuMemoryExportInfo& exportInfo) const = 0;
+#endif
+
+#if PAL_WDDM_BUILD
+    /// Acquires the keyed mutex of an opened external shared resource (for example a D3D11 resource created with a
+    /// keyed mutex) for work submitted to a queue: the mutex is acquired with the key on the CPU, then the queue waits
+    /// on the GPU for the mutex's synchronization object. Normally reached through IQueue::AcquireKeyedMutex().
+    ///
+    /// @param [in] pQueue     Queue whose following submissions access the memory.
+    /// @param [in] key        Keyed mutex key to acquire.
+    /// @param [in] timeoutMs  CPU acquire timeout in milliseconds.
+    ///
+    /// @returns Success, Timeout, or an error translated from the kernel.
+    virtual Result AcquireKeyedMutex(IQueue* pQueue, uint64 key, uint64 timeoutMs) = 0;
+
+    /// Releases the keyed mutex with a key after the work submitted to a queue: the queue signals the mutex's
+    /// synchronization object on the GPU, then the mutex is released on the CPU. Normally reached through
+    /// IQueue::ReleaseKeyedMutex().
+    ///
+    /// @param [in] pQueue  Queue whose previous submissions accessed the memory.
+    /// @param [in] key     Keyed mutex key to release with.
+    virtual Result ReleaseKeyedMutex(IQueue* pQueue, uint64 key) = 0;
 #endif
 
     /// Returns a structure containing some fundemental information that describes this GPU memory object.

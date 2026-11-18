@@ -27,6 +27,10 @@ if (PAL_AMDGPU_BUILD)
     add_subdirectory(amdgpu)
 endif()
 
+if (PAL_WDDM_BUILD)
+    add_subdirectory(wddm)
+endif()
+
 add_subdirectory(nullDevice)
 
 target_sources(pal PRIVATE CMakeLists.txt)

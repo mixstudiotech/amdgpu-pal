@@ -27,10 +27,15 @@
 
 #include <ddPlatform.h>
 
+#if defined(DD_PLATFORM_WINDOWS_UM)
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#endif
 
 namespace DevDriver
 {
@@ -87,7 +92,11 @@ namespace DevDriver
         Result LookupAddressInfo(const char* pAddress, uint16 port, size_t addressInfoSize, char* pAddressInfo, size_t *pAddressSize);
 
     private:
+#if defined(DD_PLATFORM_WINDOWS_UM)
+        using OsSocketType = SOCKET;
+#else
         using OsSocketType = int;
+#endif
 
         // When using Unix Domain sockets, we need to save the address to close the socket properly.
         char         m_address[128];

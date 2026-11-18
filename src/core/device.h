@@ -1457,6 +1457,13 @@ public:
         void*                                 pPlacementAddr,
         IQueueSemaphore**                     ppQueueSemaphore) override;
 
+#if PAL_WDDM_BUILD
+    // NOTE: Part of the public IDevice interface. Implemented by the WDDM device.
+    virtual Result OpenExternalHandleByName(
+        const ExternalHandleNameInfo& info,
+        OsExternalHandle*             pHandle) override { return Result::Unsupported; }
+#endif
+
 #if ( PAL_AMDGPU_BUILD)
     // NOTE: Part of the public IDevice interface.
     virtual Result QueryGpuMemoryBudgetInfo(

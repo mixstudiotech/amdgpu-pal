@@ -51,6 +51,13 @@
 #if PAL_HAS_CPUID
 #include <cpuid.h>
 #endif
+#elif defined(_WIN32)
+#if defined(_M_IX86) || defined(_M_X64)
+#define PAL_HAS_CPUID 1
+#else
+#define PAL_HAS_CPUID 0
+#endif
+#include <intrin.h>
 #endif
 
 namespace Util
@@ -245,7 +252,9 @@ inline Result ConvertErrno(
             result = Result::NotReady;
             break;
         case ETIMEDOUT:
+#if defined(ETIME) && ETIME != ETIMEDOUT
         case ETIME:
+#endif
             result = Result::Timeout;
             break;
         case EEXIST:
@@ -267,7 +276,9 @@ inline Result ConvertErrno(
         case EINVAL:
         case EBADF:
         case ENAMETOOLONG:
+#if defined(ELOOP)
         case ELOOP:
+#endif
             result = Result::ErrorInvalidValue;
             break;
         case ENOMEM:
@@ -644,7 +655,7 @@ inline void CpuId(
 #if   defined(__unix__)
     __get_cpuid(level, pRegValues, pRegValues + 1, pRegValues + 2, pRegValues + 3);
 #else
-#error "Not implemented for the current platform"
+    __cpuid(reinterpret_cast<int*>(pRegValues), static_cast<int>(level));
 #endif
 }
 
@@ -661,7 +672,7 @@ inline void CpuId(
 #if   defined(__unix__)
     __cpuid_count(level, sublevel, *pRegValues, *(pRegValues + 1), *(pRegValues + 2), *(pRegValues + 3));
 #else
-#error "Not implemented for the current platform"
+    __cpuidex(reinterpret_cast<int*>(pRegValues), static_cast<int>(level), static_cast<int>(sublevel));
 #endif
 }
 #endif

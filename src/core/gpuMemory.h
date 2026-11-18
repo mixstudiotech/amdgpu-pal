@@ -254,6 +254,14 @@ public:
     virtual Result SetSdiRemoteBusAddress(gpusize surfaceBusAddr, gpusize markerBusAddr) override
         { return Result::ErrorUnavailable; }
 
+#if PAL_WDDM_BUILD
+    // NOTE: Part of the public IGpuMemory interface. Keyed mutexes exist only on the WDDM GPU memory object.
+    virtual Result AcquireKeyedMutex(IQueue* pQueue, uint64 key, uint64 timeoutMs) override
+        { return Result::Unsupported; }
+    virtual Result ReleaseKeyedMutex(IQueue* pQueue, uint64 key) override
+        { return Result::Unsupported; }
+#endif
+
     bool IsVirtual()             const { return (m_desc.flags.isVirtual           != 0); }
     bool IsPeer()                const { return (m_desc.flags.isPeer              != 0); }
     bool IsShared()              const { return (m_desc.flags.isShared            != 0); }

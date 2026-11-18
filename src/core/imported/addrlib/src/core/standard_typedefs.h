@@ -51,7 +51,7 @@ typedef unsigned int            uint32;
 //----------------------------------------------------------------------------------------
 // Define 64-bit typedefs, depending on the compiler and operating system.
 //----------------------------------------------------------------------------------------
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(_MSC_VER)
 typedef long long               int64;
 typedef unsigned long long      uint64;
 

@@ -51,6 +51,9 @@ struct FenceCreateInfo
         };
         uint32 u32All;      ///< Flags packed as 32-bit uint.
     } flags;                ///< Fence creation flags.
+#if PAL_WDDM_BUILD
+    const wchar_t* pName;   ///< Optional name of the fence's event object.
+#endif
 };
 
 /// Specifies properties for fence opening. Input structure to IDevice::OpenFence().
@@ -68,6 +71,9 @@ struct FenceOpenInfo
     } flags;
 
     OsExternalHandle externalFence;     ///< External shared fence handle.
+#if PAL_WDDM_BUILD
+    const wchar_t*   pName;             ///< Name of the event object to open when externalFence is null.
+#endif
 };
 
 /// Specifies properties for fence exporting. Input structure to IFence::ExportExternalHandle().

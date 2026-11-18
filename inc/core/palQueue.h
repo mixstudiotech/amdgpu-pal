@@ -692,6 +692,24 @@ public:
     ///          + ErrorUnavailable if kernel context information is not available on the current platform.
     virtual Result QueryKernelContextInfo(KernelContextInfo* pKernelContextInfo) const = 0;
 
+#if PAL_WDDM_BUILD
+    /// Acquires the keyed mutex of an opened external shared GPU memory object before the next submissions on this
+    /// queue (see IGpuMemory::AcquireKeyedMutex()). While the queue is stalled the request is batched and executed in
+    /// order with the other batched commands.
+    ///
+    /// @param [in] pGpuMemory Opened external memory that carries a keyed mutex.
+    /// @param [in] key        Keyed mutex key to acquire.
+    /// @param [in] timeoutMs  CPU acquire timeout in milliseconds.
+    virtual Result AcquireKeyedMutex(IGpuMemory* pGpuMemory, uint64 key, uint64 timeoutMs) = 0;
+
+    /// Releases the keyed mutex of an opened external shared GPU memory object after the previous submissions on this
+    /// queue (see IGpuMemory::ReleaseKeyedMutex()). Batched like AcquireKeyedMutex() while the queue is stalled.
+    ///
+    /// @param [in] pGpuMemory Opened external memory that carries a keyed mutex.
+    /// @param [in] key        Keyed mutex key to release with.
+    virtual Result ReleaseKeyedMutex(IGpuMemory* pGpuMemory, uint64 key) = 0;
+#endif
+
     /// Returns the value of the associated arbitrary client data pointer.
     /// Can be used to associate arbitrary data with a particular PAL object.
     ///

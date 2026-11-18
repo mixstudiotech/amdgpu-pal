@@ -34,7 +34,7 @@ constexpr bool IsHostBE()
 {
 #if (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)) || defined(_M_PPC)
     return true;
-#elif (defined(__BYTE_ORDER__) && (__BYTE_ORDER__== __ORDER_LITTLE_ENDIAN__))
+#elif (defined(__BYTE_ORDER__) && (__BYTE_ORDER__== __ORDER_LITTLE_ENDIAN__)) || defined(_WIN32)
     return false;
 #else
     #error Unable to determine host byte order

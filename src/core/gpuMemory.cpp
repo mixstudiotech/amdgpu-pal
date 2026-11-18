@@ -982,7 +982,14 @@ Result GpuMemory::Init(
 
             if (IsErrorResult(result) == false)
             {
-                m_desc.uniqueId = GpuUtil::GenerateGpuMemoryUniqueId(IsInterprocess());
+#if defined(PAL_WDDM_BUILD) && PAL_WDDM_BUILD
+                // WDDM shared resources publish their creator UID in KMD private
+                // metadata during AllocateOrPinMemory, before this common tail.
+                if (m_desc.uniqueId == 0)
+#endif
+                {
+                    m_desc.uniqueId = GpuUtil::GenerateGpuMemoryUniqueId(IsInterprocess());
+                }
 
                 DescribeGpuMemory(Developer::GpuMemoryAllocationMethod::Normal);
             }

@@ -335,7 +335,7 @@ static inline UINT_32 BitMaskScanForward(
     ADDR_ASSERT(mask > 0);
     unsigned long out = 0;
 #if (defined(_WIN64) && defined(_M_X64)) || (0&& defined(_M_IX64))
-    out = ::_tzcnt_u32(mask);
+    ::_BitScanForward(&out, mask);
 #elif ( defined(_WIN64))
     ::_BitScanForward(&out, mask);
 #elif defined(__GNUC__)

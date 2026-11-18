@@ -112,6 +112,11 @@ pal_internal_bp(PAL_AMDGPU_BUILD ON
         "Whether PAL is built with an amdgpu back-end?"
 )
 
+pal_client_bp(PAL_WDDM_BUILD ON
+    DEPENDS_ON WIN32
+    DESC "Build the native AMD WDDM backend"
+)
+
 #####################################################################################
 
 pal_client_bp(PAL_BUILD_DRI3    ON  DEPENDS_ON PAL_AMDGPU_BUILD)

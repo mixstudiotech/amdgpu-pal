@@ -102,8 +102,14 @@ function(pal_compiler_options TARGET)
 
         # The MacOS linker does not have --build-id. That is OK because we do not support building
         # a driver on MacOS; it is only used for experimental building of standalone tools.
-        if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+        if (NOT WIN32 AND NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
             target_link_options(${TARGET} PUBLIC "LINKER:--build-id")
+        endif()
+    elseif(isMSVC)
+        target_compile_options(${TARGET} PRIVATE /W3 /GR- /EHs-c- /Zc:__cplusplus)
+        target_compile_definitions(${TARGET} PRIVATE _CRT_SECURE_NO_WARNINGS)
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            target_compile_options(${TARGET} PRIVATE /clang:-fcheck-new /clang:-Wno-unused-private-field)
         endif()
     else()
         message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")

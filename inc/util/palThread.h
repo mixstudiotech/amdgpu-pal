@@ -31,7 +31,9 @@
 
 #pragma once
 
+#if defined(__unix__)
 #include <pthread.h>
+#endif
 
 #include "palUtil.h"
 
@@ -39,10 +41,13 @@ namespace Util
 {
 
 // Define portable thread ID
+#if defined(_WIN32)
+using ThreadId = uint32;
+inline bool ThreadIdEqual(ThreadId id1, ThreadId id2) { return id1 == id2; }
+#else
 typedef pthread_t ThreadId;
-
-// Function to check if two ThreadIds are equal.
 inline bool ThreadIdEqual(ThreadId id1, ThreadId id2) { return pthread_equal(id1, id2); }
+#endif
 
 /**
  ***********************************************************************************************************************
@@ -122,6 +127,11 @@ private:
     // the pthread_create call used to spawn the thread.  This can then be used to determine if the thread is valid.
     Result        m_threadStatus;
     pthread_t     m_threadId;     // Pthreads thread identifier.
+#elif defined(_WIN32)
+    static unsigned PAL_STDCALL StartThread(void* pThreadObject);
+    void*         m_threadHandle;
+    ThreadId      m_threadId;
+    bool          m_ownedThread;
 #endif
 
     PAL_DISALLOW_COPY_AND_ASSIGN(Thread);
@@ -130,6 +140,8 @@ private:
 #if   defined(__unix__)
 /// Defines an opaque key, visible to all threads, that is used to store and retrieve data local to the current thread.
 typedef pthread_key_t ThreadLocalKey;
+#elif defined(_WIN32)
+using ThreadLocalKey = uint32;
 #endif
 
 /// Defines the destructor called when the thread exits.

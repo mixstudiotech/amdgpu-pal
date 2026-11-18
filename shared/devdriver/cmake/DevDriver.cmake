@@ -89,7 +89,13 @@ macro(apply_devdriver_build_flags _target)
 endmacro()
 
 function(apply_devdriver_warnings name)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+    if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        # clang-cl interprets -Wall as /Wall (all Clang diagnostics), not GNU -Wall.
+        target_compile_options(${name} PRIVATE /W4 /WX)
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            target_compile_options(${name} PRIVATE /clang:-Wno-unknown-warning-option)
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
         target_compile_options(${name} PRIVATE
             -Wall   # Enable all warnings.
             -Wextra # Enable extra warnings that are not enabled by -Wall.

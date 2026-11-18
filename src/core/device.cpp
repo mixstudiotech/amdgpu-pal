@@ -1403,6 +1403,13 @@ void Device::InitPageFaultDebugSrd()
         if (result == Result::Success)
         {
             result = m_memMgr.AllocateGpuMem(createInfo, internalCreateInfo, false, &pGpuMem, nullptr);
+            if (result != Result::Success)
+            {
+                // No bound object reaches Cleanup on this failure path. Return
+                // the separately reserved VA after backing-memory rollback.
+                const Result freeResult = FreeGpuVirtualAddress(internalCreateInfo.baseVirtAddr, vaSize);
+                PAL_ALERT(freeResult != Result::Success);
+            }
         }
         else
         {
@@ -2676,8 +2683,18 @@ Result Device::ResetFences(
 {
     Result result = Result::Success;
 
+    if ((fenceCount != 0) && (ppFenceList == nullptr))
+    {
+        return Result::ErrorInvalidPointer;
+    }
+
     for (uint32 i = 0; i < fenceCount; ++i)
     {
+        if (ppFenceList[i] == nullptr)
+        {
+            result = Result::ErrorInvalidPointer;
+            break;
+        }
         result = reinterpret_cast<Fence*>(ppFenceList[i])->Reset();
         if (result != Result::Success)
         {
@@ -2721,7 +2738,7 @@ Result Device::WaitForFences(
     {
         result = Result::ErrorInvalidValue;
     }
-    else if (ppFenceList != nullptr)
+    else if ((ppFenceList != nullptr) && (ppFenceList[0] != nullptr))
     {
         result = static_cast<const Fence *>(ppFenceList[0])->WaitForFences(
                                       *this,

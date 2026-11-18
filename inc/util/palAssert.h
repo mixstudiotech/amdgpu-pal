@@ -36,7 +36,11 @@
 
 #include <signal.h>
 /// OS-independent macro to force a break into the debugger.
+#if defined(_WIN32)
+#define PAL_DEBUG_BREAK() [[unlikely]] __debugbreak();
+#else
 #define PAL_DEBUG_BREAK() [[unlikely]] raise(SIGTRAP);
+#endif
 
 /// This macro is only useful on MSVC builds. It has no meaning for other builds.
 # define PAL_ANALYSIS_ASSUME(_expr) ((void)0)

@@ -326,7 +326,7 @@ private:
     // a chunk preamble. EndCurrentChunk will be called once for each chunk so that the implementer can add a chunk
     // postamble which was pre-reserved using m_cmdSpaceDwordPadding.
     virtual void BeginCurrentChunk() { }
-    virtual void EndCurrentChunk(bool atEndOfStream) { }
+    virtual void EndCurrentChunk(bool atEndOfStream);
 
     void TrackNestedChunks(const ChunkRefList& chunkList);
 
